@@ -34,13 +34,14 @@ jobs:
         run: |
           set -e
           cd frida-core/src/android-helper
-          # android.jar (API 19 is enough for LocalServerSocket/org.json)
-          if [ ! -f /tmp/android-19/android.jar ]; then
-            curl -fsSL -o /tmp/platform-19.zip https://dl.google.com/android/repository/platform-19_r03.zip
-            mkdir -p /tmp/android-19 && cd /tmp/android-19 && unzip -q -o /tmp/platform-19.zip
-          fi
-          ANDROID_JAR=/tmp/android-19/android-19/android.jar
+          # ubuntu-latest ships Android SDK with platforms + build-tools
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls $ANDROID_HOME/platforms/ 2>/dev/null || true
+          ls $ANDROID_HOME/build-tools/ 2>/dev/null || true
+          ANDROID_JAR=$(ls $ANDROID_HOME/platforms/*/android.jar | tail -1)
+          D8=$(ls -d $ANDROID_HOME/build-tools/*/ | tail -1)d8
           echo "android.jar: $ANDROID_JAR"
+          echo "d8: $D8"
           # javac
           rm -rf build && mkdir -p build/java
           javac -cp .:$ANDROID_JAR -bootclasspath $ANDROID_JAR -source 1.8 -target 1.8 \
@@ -48,12 +49,8 @@ jobs:
             re/hs/Helper.java re/hs/HelperBackend.java -d build/java/
           jar cfe build/frida-helper.jar re.hs.Helper -C build/java/ .
           echo "jar built: $(ls -la build/frida-helper.jar | awk '{print $5}') bytes"
-          # d8: use build-tools r34 d8
-          if [ ! -d /tmp/build-tools/34.0.0 ]; then
-            curl -fsSL -o /tmp/build-tools.zip https://dl.google.com/android/repository/build-tools_r34-linux.zip
-            mkdir -p /tmp/build-tools && cd /tmp/build-tools && unzip -q -o /tmp/build-tools.zip
-          fi
-          /tmp/build-tools/34.0.0/d8 --classpath $ANDROID_JAR --output build/ build/frida-helper.jar
+          # d8
+          $D8 --classpath $ANDROID_JAR --output build/ build/frida-helper.jar
           mv build/classes.dex helper.dex
           echo "helper.dex rebuilt: $(ls -la helper.dex | awk '{print $5}') bytes"
           # sanity: no frida keywords left in dex
