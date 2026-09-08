@@ -102,7 +102,7 @@ index f99f31f..1e49dc5 100644
  				var connection = yield new DBusConnection (stream, ServerGuid.HOST_SESSION_SERVICE,
  					AUTHENTICATION_SERVER | AUTHENTICATION_ALLOW_ANONYMOUS, null, cancellable);
 diff --git a/lib/agent/meson.build b/lib/agent/meson.build
-index 77f63d5..250bc81 100644
+index 77f63d5..14ae20f 100644
 --- a/lib/agent/meson.build
 +++ b/lib/agent/meson.build
 @@ -54,7 +54,7 @@ if build_agent
@@ -114,6 +114,28 @@ index 77f63d5..250bc81 100644
      name_prefix: 'lib',
      c_args: frida_component_cflags,
      vala_header: 'frida-agent.h',
+@@ -81,7 +81,7 @@ if build_agent
+   else
+     identity = agent_name
+   endif
+-  agent = custom_target('frida-agent',
++  agent = custom_target('hs-agent',
+     input: modulated_agent,
+     output: need_universal_agent ? f'@agent_name@-@host_abi@' : agent_name,
+     command: post_process + ['shared-library', identity],
+diff --git a/lib/gadget/meson.build b/lib/gadget/meson.build
+index 8fb4c6c..a1a3825 100644
+--- a/lib/gadget/meson.build
++++ b/lib/gadget/meson.build
+@@ -93,7 +93,7 @@ elif host_os in ['ios', 'tvos']
+ else
+   identity = gadget_name
+ endif
+-gadget_for_host_arch = custom_target('frida-gadget',
++gadget_for_host_arch = custom_target('hs-gadget',
+   input: modulated_gadget,
+   output: need_universal_gadget ? f'@gadget_name@-@host_abi@' : gadget_name,
+   command: post_process + ['shared-library', identity],
 diff --git a/lib/payload/portal-client.vala b/lib/payload/portal-client.vala
 index 309316b..f812a9e 100644
 --- a/lib/payload/portal-client.vala
@@ -144,6 +166,19 @@ index 4f4d51b..ebfb5f2 100644
  
  frida_libdir_name = f'frida-@api_version@'
  root_asset_dir = get_option('libdir') / frida_libdir_name
+diff --git a/server/meson.build b/server/meson.build
+index 8f24cbe..d803a95 100644
+--- a/server/meson.build
++++ b/server/meson.build
+@@ -44,7 +44,7 @@ raw_server = executable('frida-server-raw', server_sources,
+ server_name = 'frida-server' + exe_suffix
+ need_universal_server = assets_mode == 'installed' and server_compat != ''
+ 
+-server = custom_target('frida-server',
++server = custom_target('hs-server',
+   input: [raw_server, 'frida-server.xcent'],
+   output: need_universal_server ? f'@server_name@-@host_abi@' : server_name,
+   command: post_process + ['executable', 're.frida.Server', '@INPUT1@'],
 diff --git a/src/agent-container.vala b/src/agent-container.vala
 index eecfa1f..aa08bc3 100644
 --- a/src/agent-container.vala
@@ -530,3 +565,34 @@ index 2b3ecff..767e7fd 100644
  		}
  
  		private static uint8[] make_cstring (string str) {
+diff --git a/src/meson.build b/src/meson.build
+index ccc4f4e..89d00ba 100644
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -126,7 +126,7 @@ if have_local_backend
+       dependencies: [gio_dep, gee_dep, gum_dep, base_dep, pipe_dep],
+     )
+ 
+-    helper = custom_target('frida-helper',
++    helper = custom_target('hs-helper',
+       input: raw_helper,
+       output: helper_name,
+       command: post_process_helper,
+@@ -275,7 +275,7 @@ if have_local_backend
+ 
+     need_universal_helper = assets_mode == 'installed' and helper_compat != ''
+ 
+-    helper = custom_target('frida-helper',
++    helper = custom_target('hs-helper',
+       input: [
+         raw_helper,
+         'darwin' / 'frida-helper.xcent',
+@@ -444,7 +444,7 @@ if have_local_backend
+       dependencies: [gio_dep, gio_unix_dep, gee_dep, gum_dep, base_dep],
+     )
+ 
+-    helper = custom_target('frida-helper',
++    helper = custom_target('hs-helper',
+       input: raw_helper,
+       output: helper_name,
+       command: post_process_helper,
