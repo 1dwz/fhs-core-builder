@@ -386,7 +386,7 @@ index ebc4104..7165eef 100644
  
  		private Future<RemoteAgent> establish_connection (LoaderLaunch launch, InjectSpec spec, BootstrapResult bres,
 diff --git a/src/linux/frida-helper-process.vala b/src/linux/frida-helper-process.vala
-index a7daf02..bd6f860 100644
+index a7daf02..3237199 100644
 --- a/src/linux/frida-helper-process.vala
 +++ b/src/linux/frida-helper-process.vala
 @@ -338,7 +338,7 @@ namespace Frida {
@@ -398,14 +398,18 @@ index a7daf02..bd6f860 100644
  				string socket_address = "unix:abstract=" + socket_path;
  
  				service = new SocketService ();
-@@ -653,11 +653,11 @@ namespace Frida {
+@@ -651,13 +651,13 @@ namespace Frida {
+ 			this.tempdir = tempdir;
+ 
  #if HAVE_EMBEDDED_ASSETS
- 			var blob32 = Frida.Data.Helper.get_frida_helper_32_blob ();
+-			var blob32 = Frida.Data.Helper.get_frida_helper_32_blob ();
++			var blob32 = Frida.Data.Helper.get_hs_helper_32_blob ();
  			if (blob32.data.length > 0)
 -				helper32 = make_temporary_helper ("frida-helper-32", blob32.data);
 +				helper32 = make_temporary_helper ("hs-helper-32", blob32.data);
  
- 			var blob64 = Frida.Data.Helper.get_frida_helper_64_blob ();
+-			var blob64 = Frida.Data.Helper.get_frida_helper_64_blob ();
++			var blob64 = Frida.Data.Helper.get_hs_helper_64_blob ();
  			if (blob64.data.length > 0)
 -				helper64 = make_temporary_helper ("frida-helper-64", blob64.data);
 +				helper64 = make_temporary_helper ("hs-helper-64", blob64.data);
@@ -463,14 +467,22 @@ index b9fa526..5e80c9b 100644
    const char * name_utf8;
    bool revert_now;
 diff --git a/src/linux/linux-host-session.vala b/src/linux/linux-host-session.vala
-index aa7d26c..ec58327 100644
+index aa7d26c..b6acc1e 100644
 --- a/src/linux/linux-host-session.vala
 +++ b/src/linux/linux-host-session.vala
-@@ -64,12 +64,12 @@ namespace Frida {
- 			var blob64 = Frida.Data.Agent.get_frida_agent_64_so_blob ();
- 			var emulated_arm = Frida.Data.Agent.get_frida_agent_arm_so_blob ();
- 			var emulated_arm64 = Frida.Data.Agent.get_frida_agent_arm64_so_blob ();
+@@ -60,16 +60,16 @@ namespace Frida {
+ 			injector.uninjected.connect (on_uninjected);
+ 
+ #if HAVE_EMBEDDED_ASSETS
+-			var blob32 = Frida.Data.Agent.get_frida_agent_32_so_blob ();
+-			var blob64 = Frida.Data.Agent.get_frida_agent_64_so_blob ();
+-			var emulated_arm = Frida.Data.Agent.get_frida_agent_arm_so_blob ();
+-			var emulated_arm64 = Frida.Data.Agent.get_frida_agent_arm64_so_blob ();
 -			agent = new AgentDescriptor (PathTemplate ("frida-agent-<arch>.so"),
++			var blob32 = Frida.Data.Agent.get_hs_agent_32_so_blob ();
++			var blob64 = Frida.Data.Agent.get_hs_agent_64_so_blob ();
++			var emulated_arm = Frida.Data.Agent.get_hs_agent_arm_so_blob ();
++			var emulated_arm64 = Frida.Data.Agent.get_hs_agent_arm64_so_blob ();
 +			agent = new AgentDescriptor (PathTemplate ("hs-agent-<arch>.so"),
  				new Bytes.static (blob32.data),
  				new Bytes.static (blob64.data),
