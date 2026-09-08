@@ -1,3 +1,93 @@
+diff --git a/compat/build.py b/compat/build.py
+index 611336c..f267198 100644
+--- a/compat/build.py
++++ b/compat/build.py
+@@ -238,28 +238,28 @@ def setup(role: Role,
+                 if "helper" in components:
+                     outputs[group] += [
+                         Output(identifier=f"helper_{kind}",
+-                               name=f"frida-helper-{other_arch}",
++                               name=f"hs-helper-{other_arch}",
+                                file=HELPER_FILE_UNIX,
+                                target=HELPER_TARGET),
+                     ]
+                 if "agent" in components:
+                     outputs[group] += [
+                         Output(identifier=f"agent_{kind}",
+-                               name=f"frida-agent-{other_arch}.dylib",
++                               name=f"hs-agent-{other_arch}.dylib",
+                                file=AGENT_FILE_DARWIN,
+                                target=AGENT_TARGET),
+                     ]
+                 if "gadget" in components:
+                     outputs[group] += [
+                         Output(identifier=f"gadget_{kind}",
+-                               name=f"frida-gadget-{other_arch}.dylib",
++                               name=f"hs-gadget-{other_arch}.dylib",
+                                file=GADGET_FILE_DARWIN,
+                                target=GADGET_TARGET),
+                     ]
+                 if "server" in components and assets == "installed":
+                     outputs[group] += [
+                         Output(identifier=f"server_{kind}",
+-                               name=f"frida-server-{other_arch}",
++                               name=f"hs-server-{other_arch}",
+                                file=SERVER_FILE_UNIX,
+                                target=SERVER_TARGET),
+                     ]
+@@ -346,14 +346,14 @@ def setup(role: Role,
+             if host_os == "android" and host_arch in {"x86_64", "x86"} and "agent" in components:
+                 outputs[OutputGroup("arm")] = [
+                     Output(identifier="agent_emulated_legacy",
+-                           name="frida-agent-arm.so",
++                           name="hs-agent-arm.so",
+                            file=AGENT_FILE_ELF,
+                            target=AGENT_TARGET),
+                 ]
+                 if host_arch == "x86_64":
+                     outputs[OutputGroup("arm64")] = [
+                         Output(identifier="agent_emulated_modern",
+-                               name="frida-agent-arm64.so",
++                               name="hs-agent-arm64.so",
+                                file=AGENT_FILE_ELF,
+                                target=AGENT_TARGET),
+                     ]
+@@ -805,22 +805,22 @@ OVERRIDDEN_COMPAT_OPTIONS = {
+     "agent_emulated_legacy",
+ }
+ 
+-HELPER_TARGET = "frida-helper"
+-HELPER_FILE_WINDOWS = Path("src") / "frida-helper.exe"
+-HELPER_FILE_UNIX = Path("src") / "frida-helper"
++HELPER_TARGET = "hs-helper"
++HELPER_FILE_WINDOWS = Path("src") / "hs-helper.exe"
++HELPER_FILE_UNIX = Path("src") / "hs-helper"
+ 
+-AGENT_TARGET = "frida-agent"
+-AGENT_FILE_WINDOWS = Path("lib") / "agent" / "frida-agent.dll"
+-AGENT_FILE_DARWIN = Path("lib") / "agent" / "frida-agent.dylib"
+-AGENT_FILE_ELF = Path("lib") / "agent" / "frida-agent.so"
++AGENT_TARGET = "hs-agent"
++AGENT_FILE_WINDOWS = Path("lib") / "agent" / "hs-agent.dll"
++AGENT_FILE_DARWIN = Path("lib") / "agent" / "hs-agent.dylib"
++AGENT_FILE_ELF = Path("lib") / "agent" / "hs-agent.so"
+ 
+-GADGET_TARGET = "frida-gadget"
+-GADGET_FILE_WINDOWS = Path("lib") / "gadget" / "frida-gadget.dll"
+-GADGET_FILE_DARWIN = Path("lib") / "gadget" / "frida-gadget.dylib"
+-GADGET_FILE_ELF = Path("lib") / "gadget" / "frida-gadget.so"
++GADGET_TARGET = "hs-gadget"
++GADGET_FILE_WINDOWS = Path("lib") / "gadget" / "hs-gadget.dll"
++GADGET_FILE_DARWIN = Path("lib") / "gadget" / "hs-gadget.dylib"
++GADGET_FILE_ELF = Path("lib") / "gadget" / "hs-gadget.so"
+ 
+-SERVER_TARGET = "frida-server"
+-SERVER_FILE_UNIX = Path("server") / "frida-server"
++SERVER_TARGET = "hs-server"
++SERVER_FILE_UNIX = Path("server") / "hs-server"
+ 
+ MSVS_ENVVARS = {
+     "PLATFORM",
 diff --git a/lib/agent/agent.vala b/lib/agent/agent.vala
 index f99f31f..1e49dc5 100644
 --- a/lib/agent/agent.vala
@@ -11,6 +101,19 @@ index f99f31f..1e49dc5 100644
  
  				var connection = yield new DBusConnection (stream, ServerGuid.HOST_SESSION_SERVICE,
  					AUTHENTICATION_SERVER | AUTHENTICATION_ALLOW_ANONYMOUS, null, cancellable);
+diff --git a/lib/agent/meson.build b/lib/agent/meson.build
+index 77f63d5..250bc81 100644
+--- a/lib/agent/meson.build
++++ b/lib/agent/meson.build
+@@ -54,7 +54,7 @@ if build_agent
+     extra_link_args += '-Wl,-Bsymbolic'
+   endif
+ 
+-  raw_agent = shared_library('frida-agent-raw', agent_sources,
++  raw_agent = shared_library('hs-agent-raw', agent_sources,
+     name_prefix: 'lib',
+     c_args: frida_component_cflags,
+     vala_header: 'frida-agent.h',
 diff --git a/lib/payload/portal-client.vala b/lib/payload/portal-client.vala
 index 309316b..f812a9e 100644
 --- a/lib/payload/portal-client.vala
