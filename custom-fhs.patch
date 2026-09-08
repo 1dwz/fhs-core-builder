@@ -123,6 +123,19 @@ index 77f63d5..14ae20f 100644
      input: modulated_agent,
      output: need_universal_agent ? f'@agent_name@-@host_abi@' : agent_name,
      command: post_process + ['shared-library', identity],
+diff --git a/lib/base/session.vala b/lib/base/session.vala
+index 21402d2..ffcbd4f 100644
+--- a/lib/base/session.vala
++++ b/lib/base/session.vala
+@@ -1290,7 +1290,7 @@ namespace Frida {
+ 			throw (IOError) e;
+ 
+ 		if (e is DBusError.UNKNOWN_METHOD) {
+-			throw new Frida.Error.PROTOCOL ("Unable to communicate with remote frida-server; " +
++			throw new Frida.Error.PROTOCOL ("Unable to communicate with remote agent; " +
+ 				"please ensure that major versions match and that the remote Frida has the " +
+ 				"feature you are trying to use");
+ 		}
 diff --git a/lib/gadget/meson.build b/lib/gadget/meson.build
 index 8fb4c6c..a1a3825 100644
 --- a/lib/gadget/meson.build
@@ -260,7 +273,7 @@ index 315fe53..28ba4f7 100644
  import android.app.ActivityManager;
  import android.app.ActivityManager.RunningAppProcessInfo;
 diff --git a/src/droidy/droidy-host-session.vala b/src/droidy/droidy-host-session.vala
-index bed3940..133c094 100644
+index bed3940..100b94f 100644
 --- a/src/droidy/droidy-host-session.vala
 +++ b/src/droidy/droidy-host-session.vala
 @@ -266,7 +266,7 @@ namespace Frida {
@@ -299,6 +312,30 @@ index bed3940..133c094 100644
  			}
  
  			InputStream gadget;
+@@ -884,7 +884,7 @@ namespace Frida {
+ 				}
+ 
+ 				if (connection.closed)
+-					throw new Error.SERVER_NOT_RUNNING ("Unable to connect to remote frida-server");
++					throw new Error.SERVER_NOT_RUNNING ("Unable to connect to remote agent");
+ 
+ 				var server = new RemoteServer (session, connection, flavor, transport_broker);
+ 				attach_remote_server (server);
+@@ -905,11 +905,11 @@ namespace Frida {
+ 					last_server_check_error = null;
+ 				} else {
+ 					if (e is Error.SERVER_NOT_RUNNING) {
+-						api_error = new Error.SERVER_NOT_RUNNING ("Unable to connect to remote frida-server");
++						api_error = new Error.SERVER_NOT_RUNNING ("Unable to connect to remote agent");
+ 					} else if (connection != null) {
+-						api_error = new Error.PROTOCOL ("Incompatible frida-server version");
++						api_error = new Error.PROTOCOL ("Incompatible agent version");
+ 					} else {
+-						api_error = new Error.SERVER_NOT_RUNNING ("Unable to connect to remote frida-server: %s",
++						api_error = new Error.SERVER_NOT_RUNNING ("Unable to connect to remote agent: %s",
+ 							e.message);
+ 					}
+ 
 @@ -1030,7 +1030,7 @@ namespace Frida {
  			try {
  				string device_serial = device_details.serial;
@@ -372,6 +409,44 @@ index 35c5c9f..19a3c83 100644
  
          if helper_modern is not None:
              shutil.copy(helper_modern, embedded_helper_modern)
+diff --git a/src/frida.vala b/src/frida.vala
+index 59386de..b38489e 100644
+--- a/src/frida.vala
++++ b/src/frida.vala
+@@ -613,7 +613,7 @@ namespace Frida {
+ 
+ 	/**
+ 	 * Represents a device that Frida can interact with, such as the local
+-	 * system, a USB-connected phone, or a remote frida-server.
++	 * system, a USB-connected phone, or a remote agent.
+ 	 *
+ 	 * Obtain one through a {@link DeviceManager}, then use it to spawn or attach
+ 	 * to processes.
+diff --git a/src/fruity/fruity-host-session.vala b/src/fruity/fruity-host-session.vala
+index b9c1876..7258fa1 100644
+--- a/src/fruity/fruity-host-session.vala
++++ b/src/fruity/fruity-host-session.vala
+@@ -1345,7 +1345,7 @@ namespace Frida {
+ 				}
+ 
+ 				if (connection.closed)
+-					throw new Error.SERVER_NOT_RUNNING ("Unable to connect to remote frida-server");
++					throw new Error.SERVER_NOT_RUNNING ("Unable to connect to remote agent");
+ 
+ 				var server = new RemoteServer (flavor, session, connection, channel, device, transport_broker);
+ 				attach_remote_server (server);
+@@ -1368,9 +1368,9 @@ namespace Frida {
+ 					if (e is Error) {
+ 						api_error = e;
+ 					} else if (connection != null) {
+-						api_error = new Error.PROTOCOL ("Incompatible frida-server version");
++						api_error = new Error.PROTOCOL ("Incompatible agent version");
+ 					} else {
+-						api_error = new Error.SERVER_NOT_RUNNING ("Unable to connect to remote frida-server: %s",
++						api_error = new Error.SERVER_NOT_RUNNING ("Unable to connect to remote agent: %s",
+ 							e.message);
+ 					}
+ 
 diff --git a/src/linux/helpers/zymbiote.c b/src/linux/helpers/zymbiote.c
 index b9fa526..5e80c9b 100644
 --- a/src/linux/helpers/zymbiote.c
@@ -713,3 +788,37 @@ index ccc4f4e..724ca83 100644
        input: raw_helper,
        output: helper_name,
        command: post_process_helper,
+diff --git a/src/socket/socket-host-session.vala b/src/socket/socket-host-session.vala
+index 02605a2..1b08aa7 100644
+--- a/src/socket/socket-host-session.vala
++++ b/src/socket/socket-host-session.vala
+@@ -93,9 +93,9 @@ namespace Frida {
+ 				socket_connection = yield client.connect_async (connectable, cancellable);
+ 			} catch (GLib.Error e) {
+ 				if (e is IOError.CONNECTION_REFUSED)
+-					throw new Error.SERVER_NOT_RUNNING ("Unable to connect to remote frida-server");
++					throw new Error.SERVER_NOT_RUNNING ("Unable to connect to remote agent");
+ 				else
+-					throw new Error.SERVER_NOT_RUNNING ("Unable to connect to remote frida-server: %s", e.message);
++					throw new Error.SERVER_NOT_RUNNING ("Unable to connect to remote agent: %s", e.message);
+ 			}
+ 
+ 			Socket socket = socket_connection.socket;
+@@ -145,7 +145,7 @@ namespace Frida {
+ 					auth_service = yield connection.get_proxy (null, ObjectPath.AUTHENTICATION_SERVICE,
+ 						DO_NOT_LOAD_PROPERTIES, cancellable);
+ 				} catch (IOError e) {
+-					throw new Error.PROTOCOL ("Incompatible frida-server version");
++					throw new Error.PROTOCOL ("Incompatible agent version");
+ 				}
+ 
+ 				try {
+@@ -160,7 +160,7 @@ namespace Frida {
+ 				host_session = yield connection.get_proxy (null, ObjectPath.HOST_SESSION, DO_NOT_LOAD_PROPERTIES,
+ 					cancellable);
+ 			} catch (IOError e) {
+-				throw new Error.PROTOCOL ("Incompatible frida-server version");
++				throw new Error.PROTOCOL ("Incompatible agent version");
+ 			}
+ 
+ 			var entry = new HostEntry (connection, host_session, keepalive_interval);
