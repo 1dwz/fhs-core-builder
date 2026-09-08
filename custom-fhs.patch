@@ -1,3 +1,59 @@
+diff --git a/lib/agent/agent.vala b/lib/agent/agent.vala
+index f99f31f..1e49dc5 100644
+--- a/lib/agent/agent.vala
++++ b/lib/agent/agent.vala
+@@ -1429,7 +1429,7 @@ namespace Frida.Agent {
+ 
+ 				emulated_bridge_state = new BridgeState (parameters.str);
+ 
+-				emulated_worker = new Thread<void> ("frida-agent-emulated", run_emulated_agent);
++				emulated_worker = new Thread<void> ("hs-agent-emulated", run_emulated_agent);
+ 
+ 				var connection = yield new DBusConnection (stream, ServerGuid.HOST_SESSION_SERVICE,
+ 					AUTHENTICATION_SERVER | AUTHENTICATION_ALLOW_ANONYMOUS, null, cancellable);
+diff --git a/lib/payload/portal-client.vala b/lib/payload/portal-client.vala
+index 309316b..f812a9e 100644
+--- a/lib/payload/portal-client.vala
++++ b/lib/payload/portal-client.vala
+@@ -275,7 +275,7 @@ namespace Frida {
+ 			var opts = SessionOptions._deserialize (options);
+ 
+ 			if (opts.realm == EMULATED)
+-				throw new Error.NOT_SUPPORTED ("Emulated realm is not supported by frida-gadget");
++				throw new Error.NOT_SUPPORTED ("Emulated realm is not supported by hs-gadget");
+ 
+ 			AgentMessageSink sink;
+ 			try {
+diff --git a/meson.build b/meson.build
+index 4f4d51b..ebfb5f2 100644
+--- a/meson.build
++++ b/meson.build
+@@ -224,9 +224,9 @@ else
+   shlib_suffix = '.so'
+ endif
+ 
+-helper_name = 'frida-helper' + exe_suffix
+-agent_name = 'frida-agent' + shlib_suffix
+-gadget_name = 'frida-gadget' + shlib_suffix
++helper_name = 'hs-helper' + exe_suffix
++agent_name = 'hs-agent' + shlib_suffix
++gadget_name = 'hs-gadget' + shlib_suffix
+ 
+ frida_libdir_name = f'frida-@api_version@'
+ root_asset_dir = get_option('libdir') / frida_libdir_name
+diff --git a/src/agent-container.vala b/src/agent-container.vala
+index eecfa1f..aa08bc3 100644
+--- a/src/agent-container.vala
++++ b/src/agent-container.vala
+@@ -103,7 +103,7 @@ namespace Frida {
+ 		}
+ 
+ 		private void start_worker_thread () {
+-			thread = new Thread<bool> ("frida-agent-container", run);
++			thread = new Thread<bool> ("hs-agent-container", run);
+ 		}
+ 
+ 		private void stop_worker_thread () {
 diff --git a/src/android-helper/Makefile b/src/android-helper/Makefile
 index 17ebc3e..7db7fd0 100644
 --- a/src/android-helper/Makefile
@@ -150,6 +206,34 @@ index 263f608..2a3ae39 100644
  			string config_path_app = "/data/data/" + package + "/gadget.config";
  			string unix_socket_path = "frida:" + package;
  
+diff --git a/src/embed-agent.py b/src/embed-agent.py
+index cfb4a59..a866132 100644
+--- a/src/embed-agent.py
++++ b/src/embed-agent.py
+@@ -73,7 +73,7 @@ def main(argv):
+                               (agent_legacy, "32"),
+                               (agent_emulated_modern, "arm64"),
+                               (agent_emulated_legacy, "arm")]:
+-            embedded_agent = priv_dir / f"frida-agent-{flavor}.so"
++            embedded_agent = priv_dir / f"hs-agent-{flavor}.so"
+             if agent is not None:
+                 shutil.copy(agent, embedded_agent)
+             else:
+diff --git a/src/embed-helper.py b/src/embed-helper.py
+index 35c5c9f..19a3c83 100644
+--- a/src/embed-helper.py
++++ b/src/embed-helper.py
+@@ -51,8 +51,8 @@ def main(argv):
+ 
+         embedded_assets += [embedded_helper]
+     else:
+-        embedded_helper_modern = priv_dir / f"frida-helper-64"
+-        embedded_helper_legacy = priv_dir / f"frida-helper-32"
++        embedded_helper_modern = priv_dir / f"hs-helper-64"
++        embedded_helper_legacy = priv_dir / f"hs-helper-32"
+ 
+         if helper_modern is not None:
+             shutil.copy(helper_modern, embedded_helper_modern)
 diff --git a/src/linux/frida-helper-backend.vala b/src/linux/frida-helper-backend.vala
 index ebc4104..7165eef 100644
 --- a/src/linux/frida-helper-backend.vala
