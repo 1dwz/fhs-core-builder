@@ -1,0 +1,101 @@
+name: build-devkit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+env:
+  FRIDA_VERSION: 17.17.0
+  FRIDA_CORE_OPTIONS: '--with-devkits=core'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out builder repo
+        uses: actions/checkout@v4
+
+      - name: Check out frida-core sources
+        uses: actions/checkout@v4
+        with:
+          repository: frida/frida-core
+          ref: ${{ env.FRIDA_VERSION }}
+          path: frida-core
+          submodules: recursive
+
+      - name: Apply custom patch
+        run: |
+          git -C frida-core apply --whitespace=nowarn ../custom-fhs.patch
+          echo "=== patch applied ==="
+          git -C frida-core diff --stat
+
+      - name: Rebuild helper.dex with renamed package
+        run: |
+          set -e
+          cd frida-core/src/android-helper
+          # android.jar (API 19 is enough for LocalServerSocket/org.json)
+          if [ ! -f /tmp/android-19/android.jar ]; then
+            curl -fsSL -o /tmp/platform-19.zip https://dl.google.com/android/repository/platform-19_r03.zip
+            mkdir -p /tmp/android-19 && cd /tmp/android-19 && unzip -q -o /tmp/platform-19.zip
+          fi
+          ANDROID_JAR=/tmp/android-19/android-19/android.jar
+          echo "android.jar: $ANDROID_JAR"
+          # javac
+          rm -rf build && mkdir -p build/java
+          javac -cp .:$ANDROID_JAR -bootclasspath $ANDROID_JAR -source 1.8 -target 1.8 \
+            -Xlint:deprecation -Xlint:unchecked \
+            re/hs/Helper.java re/hs/HelperBackend.java -d build/java/
+          jar cfe build/frida-helper.jar re.hs.Helper -C build/java/ .
+          echo "jar built: $(ls -la build/frida-helper.jar | awk '{print $5}') bytes"
+          # d8: use build-tools r34 d8
+          if [ ! -d /tmp/build-tools/34.0.0 ]; then
+            curl -fsSL -o /tmp/build-tools.zip https://dl.google.com/android/repository/build-tools_r34-linux.zip
+            mkdir -p /tmp/build-tools && cd /tmp/build-tools && unzip -q -o /tmp/build-tools.zip
+          fi
+          /tmp/build-tools/34.0.0/d8 --classpath $ANDROID_JAR --output build/ build/frida-helper.jar
+          mv build/classes.dex helper.dex
+          echo "helper.dex rebuilt: $(ls -la helper.dex | awk '{print $5}') bytes"
+          # sanity: no frida keywords left in dex
+          ! strings helper.dex | grep -i frida || (echo "FAIL: frida keyword remains in helper.dex" && exit 1)
+          echo "helper.dex clean: no frida keywords"
+
+      - name: Install Go toolchain
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'frida-core/src/compiler/go.mod'
+          cache-dependency-path: 'frida-core/src/compiler/go.mod'
+
+      - uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r29
+
+      - name: Add NDK to env
+        run: echo ANDROID_NDK_ROOT=${{ steps.setup-ndk.outputs.ndk-path }} >> $GITHUB_ENV
+
+      - name: Build devkit
+        working-directory: frida-core
+        run: |
+          ./configure \
+              --host=android-arm64 \
+              --enable-compiler-backend \
+              ${{ env.FRIDA_CORE_OPTIONS }}
+          make
+
+      - name: Verify no frida keywords in devkit archive
+        working-directory: frida-core
+        run: |
+          echo "=== strings scan (devkit .a) ==="
+          ! strings build/src/devkit/libfrida-core.a | grep -E 'frida-helper|frida-gadget|re\.frida\.Helper|/frida-' || {
+            echo "WARN: some frida strings remain (gum-js blob is expected)";
+          }
+          echo "=== dynsym check ==="
+          nm -D --defined-only build/src/devkit/libfrida-core.a 2>/dev/null | head -5 || true
+
+      - name: Upload devkit artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-devkit-android-arm64
+          path: frida-core/build/src/devkit/
+          retention-days: 7
