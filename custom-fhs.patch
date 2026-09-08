@@ -372,63 +372,6 @@ index 35c5c9f..19a3c83 100644
  
          if helper_modern is not None:
              shutil.copy(helper_modern, embedded_helper_modern)
-diff --git a/src/linux/frida-helper-backend.vala b/src/linux/frida-helper-backend.vala
-index ebc4104..7165eef 100644
---- a/src/linux/frida-helper-backend.vala
-+++ b/src/linux/frida-helper-backend.vala
-@@ -1250,7 +1250,7 @@ namespace Frida {
- 		}
- 
- 		private static string make_fallback_address () {
--			return "/frida-" + Uuid.string_random ();
-+			return "/hs-" + Uuid.string_random ();
- 		}
- 
- 		private Future<RemoteAgent> establish_connection (LoaderLaunch launch, InjectSpec spec, BootstrapResult bres,
-diff --git a/src/linux/frida-helper-process.vala b/src/linux/frida-helper-process.vala
-index a7daf02..3237199 100644
---- a/src/linux/frida-helper-process.vala
-+++ b/src/linux/frida-helper-process.vala
-@@ -338,7 +338,7 @@ namespace Frida {
- 			TimeoutSource? timeout_source = null;
- 
- 			try {
--				string socket_path = "/frida-" + Uuid.string_random ();
-+				string socket_path = "/hs-" + Uuid.string_random ();
- 				string socket_address = "unix:abstract=" + socket_path;
- 
- 				service = new SocketService ();
-@@ -651,13 +651,13 @@ namespace Frida {
- 			this.tempdir = tempdir;
- 
- #if HAVE_EMBEDDED_ASSETS
--			var blob32 = Frida.Data.Helper.get_frida_helper_32_blob ();
-+			var blob32 = Frida.Data.Helper.get_hs_helper_32_blob ();
- 			if (blob32.data.length > 0)
--				helper32 = make_temporary_helper ("frida-helper-32", blob32.data);
-+				helper32 = make_temporary_helper ("hs-helper-32", blob32.data);
- 
--			var blob64 = Frida.Data.Helper.get_frida_helper_64_blob ();
-+			var blob64 = Frida.Data.Helper.get_hs_helper_64_blob ();
- 			if (blob64.data.length > 0)
--				helper64 = make_temporary_helper ("frida-helper-64", blob64.data);
-+				helper64 = make_temporary_helper ("hs-helper-64", blob64.data);
- #else
- 			var tpl = PathTemplate (Frida.helper_path);
- 			string path = tpl.expand ((sizeof (void *) == 8) ? "32" : "64");
-diff --git a/src/linux/frida-helper-types.vala b/src/linux/frida-helper-types.vala
-index 86609b2..ff0ef6b 100644
---- a/src/linux/frida-helper-types.vala
-+++ b/src/linux/frida-helper-types.vala
-@@ -43,7 +43,7 @@ namespace Frida {
- 		CONTROL_CHANNEL,
- 	}
- 
--	[DBus (name = "re.frida.Helper")]
-+	[DBus (name = "re.hs.Helper")]
- 	public interface LinuxRemoteHelper : Object {
- 		public signal void output (uint pid, int fd, uint8[] data);
- 		public signal void uninjected (uint id);
 diff --git a/src/linux/helpers/zymbiote.c b/src/linux/helpers/zymbiote.c
 index b9fa526..5e80c9b 100644
 --- a/src/linux/helpers/zymbiote.c
@@ -466,6 +409,110 @@ index b9fa526..5e80c9b 100644
  {
    const char * name_utf8;
    bool revert_now;
+diff --git a/src/linux/frida-helper-backend-glue.c b/src/linux/hs-helper-backend-glue.c
+similarity index 98%
+rename from src/linux/frida-helper-backend-glue.c
+rename to src/linux/hs-helper-backend-glue.c
+index 4af169a..cbd2ca5 100644
+--- a/src/linux/frida-helper-backend-glue.c
++++ b/src/linux/hs-helper-backend-glue.c
+@@ -1,4 +1,4 @@
+-#include "frida-helper-backend.h"
++#include "hs-helper-backend.h"
+ 
+ #include <sys/syscall.h>
+ 
+diff --git a/src/linux/frida-helper-backend-types.c b/src/linux/hs-helper-backend-types.c
+similarity index 91%
+rename from src/linux/frida-helper-backend-types.c
+rename to src/linux/hs-helper-backend-types.c
+index 9513fa3..7d00086 100644
+--- a/src/linux/frida-helper-backend-types.c
++++ b/src/linux/hs-helper-backend-types.c
+@@ -1,4 +1,4 @@
+-#include "frida-helper-backend.h"
++#include "hs-helper-backend.h"
+ #include "helpers/inject-context.h"
+ 
+ G_STATIC_ASSERT (sizeof (FridaHelperBootstrapContext) == sizeof (FridaBootstrapContext));
+diff --git a/src/linux/frida-helper-backend.resources b/src/linux/hs-helper-backend.resources
+similarity index 100%
+rename from src/linux/frida-helper-backend.resources
+rename to src/linux/hs-helper-backend.resources
+diff --git a/src/linux/frida-helper-backend.vala b/src/linux/hs-helper-backend.vala
+similarity index 99%
+rename from src/linux/frida-helper-backend.vala
+rename to src/linux/hs-helper-backend.vala
+index ebc4104..7165eef 100644
+--- a/src/linux/frida-helper-backend.vala
++++ b/src/linux/hs-helper-backend.vala
+@@ -1250,7 +1250,7 @@ namespace Frida {
+ 		}
+ 
+ 		private static string make_fallback_address () {
+-			return "/frida-" + Uuid.string_random ();
++			return "/hs-" + Uuid.string_random ();
+ 		}
+ 
+ 		private Future<RemoteAgent> establish_connection (LoaderLaunch launch, InjectSpec spec, BootstrapResult bres,
+diff --git a/src/linux/frida-helper-process.vala b/src/linux/hs-helper-process.vala
+similarity index 98%
+rename from src/linux/frida-helper-process.vala
+rename to src/linux/hs-helper-process.vala
+index a7daf02..3237199 100644
+--- a/src/linux/frida-helper-process.vala
++++ b/src/linux/hs-helper-process.vala
+@@ -338,7 +338,7 @@ namespace Frida {
+ 			TimeoutSource? timeout_source = null;
+ 
+ 			try {
+-				string socket_path = "/frida-" + Uuid.string_random ();
++				string socket_path = "/hs-" + Uuid.string_random ();
+ 				string socket_address = "unix:abstract=" + socket_path;
+ 
+ 				service = new SocketService ();
+@@ -651,13 +651,13 @@ namespace Frida {
+ 			this.tempdir = tempdir;
+ 
+ #if HAVE_EMBEDDED_ASSETS
+-			var blob32 = Frida.Data.Helper.get_frida_helper_32_blob ();
++			var blob32 = Frida.Data.Helper.get_hs_helper_32_blob ();
+ 			if (blob32.data.length > 0)
+-				helper32 = make_temporary_helper ("frida-helper-32", blob32.data);
++				helper32 = make_temporary_helper ("hs-helper-32", blob32.data);
+ 
+-			var blob64 = Frida.Data.Helper.get_frida_helper_64_blob ();
++			var blob64 = Frida.Data.Helper.get_hs_helper_64_blob ();
+ 			if (blob64.data.length > 0)
+-				helper64 = make_temporary_helper ("frida-helper-64", blob64.data);
++				helper64 = make_temporary_helper ("hs-helper-64", blob64.data);
+ #else
+ 			var tpl = PathTemplate (Frida.helper_path);
+ 			string path = tpl.expand ((sizeof (void *) == 8) ? "32" : "64");
+diff --git a/src/linux/frida-helper-service.vala b/src/linux/hs-helper-service.vala
+similarity index 100%
+rename from src/linux/frida-helper-service.vala
+rename to src/linux/hs-helper-service.vala
+diff --git a/src/linux/frida-helper-types.vala b/src/linux/hs-helper-types.vala
+similarity index 99%
+rename from src/linux/frida-helper-types.vala
+rename to src/linux/hs-helper-types.vala
+index 86609b2..ff0ef6b 100644
+--- a/src/linux/frida-helper-types.vala
++++ b/src/linux/hs-helper-types.vala
+@@ -43,7 +43,7 @@ namespace Frida {
+ 		CONTROL_CHANNEL,
+ 	}
+ 
+-	[DBus (name = "re.frida.Helper")]
++	[DBus (name = "re.hs.Helper")]
+ 	public interface LinuxRemoteHelper : Object {
+ 		public signal void output (uint pid, int fd, uint8[] data);
+ 		public signal void uninjected (uint id);
+diff --git a/src/linux/frida-helper.version b/src/linux/hs-helper.version
+similarity index 100%
+rename from src/linux/frida-helper.version
+rename to src/linux/hs-helper.version
 diff --git a/src/linux/linux-host-session.vala b/src/linux/linux-host-session.vala
 index aa7d26c..b6acc1e 100644
 --- a/src/linux/linux-host-session.vala
@@ -578,7 +625,7 @@ index 2b3ecff..767e7fd 100644
  
  		private static uint8[] make_cstring (string str) {
 diff --git a/src/meson.build b/src/meson.build
-index ccc4f4e..89d00ba 100644
+index ccc4f4e..724ca83 100644
 --- a/src/meson.build
 +++ b/src/meson.build
 @@ -126,7 +126,7 @@ if have_local_backend
@@ -599,6 +646,64 @@ index ccc4f4e..89d00ba 100644
        input: [
          raw_helper,
          'darwin' / 'frida-helper.xcent',
+@@ -333,7 +333,7 @@ if have_local_backend
+       'linux' / 'linux-host-session.vala',
+       'linux' / 'linjector.vala',
+       'linux' / 'linjector-glue.c',
+-      'linux' / 'frida-helper-process.vala',
++      'linux' / 'hs-helper-process.vala',
+       'linux' / 'supersu.vala',
+     ]
+ 
+@@ -349,10 +349,10 @@ if have_local_backend
+     endif
+ 
+     helper_backend_sources = [
+-      'linux' / 'frida-helper-backend.vala',
+-      'linux' / 'frida-helper-backend-glue.c',
+-      'linux' / 'frida-helper-backend-types.c',
+-      'linux' / 'frida-helper-types.vala',
++      'linux' / 'hs-helper-backend.vala',
++      'linux' / 'hs-helper-backend-glue.c',
++      'linux' / 'hs-helper-backend-types.c',
++      'linux' / 'hs-helper-types.vala',
+       'linux' / 'spawn-gater.vala',
+       'linux' / 'activity-sampler.vala',
+       'linux' / 'syscall-tracer.vala',
+@@ -383,7 +383,7 @@ if have_local_backend
+     helpers_bpf_arch_dir = helpers_artifacts_dir / 'bpf' / bpf_arch
+     helper_backend_data = custom_target('frida-data-helper-backend',
+       input: [
+-        'linux' / 'frida-helper-backend.resources',
++        'linux' / 'hs-helper-backend.resources',
+         helpers_native_dir / 'bootstrapper.bin',
+         helpers_native_dir / 'loader.bin',
+         helpers_bpf_noarch_dir  / 'activity-sampler.elf',
+@@ -417,7 +417,7 @@ if have_local_backend
+       gum_vala_args,
+       '--pkg=posix',
+     ]
+-    helper_backend = static_library('frida-helper-backend', helper_backend_sources,
++    helper_backend = static_library('hs-helper-backend', helper_backend_sources,
+       c_args: frida_component_cflags,
+       vala_args: [
+         helper_backend_vala_args,
+@@ -431,12 +431,12 @@ if have_local_backend
+     backend_libs += [helper_backend]
+ 
+     helper_sources = [
+-      'linux' / 'frida-helper-service.vala',
++      'linux' / 'hs-helper-service.vala',
+     ]
+-    helper_symscript = 'linux' / 'frida-helper.version'
++    helper_symscript = 'linux' / 'hs-helper.version'
+     helper_link_args = ['-Wl,--version-script,' + meson.current_source_dir() / helper_symscript]
+     helper_link_depends = [helper_symscript]
+-    raw_helper = executable('frida-helper-raw', helper_sources,
++    raw_helper = executable('hs-helper-raw', helper_sources,
+       vala_args: helper_backend_vala_args,
+       link_args: helper_link_args,
+       link_depends: helper_link_depends,
 @@ -444,7 +444,7 @@ if have_local_backend
        dependencies: [gio_dep, gio_unix_dep, gee_dep, gum_dep, base_dep],
      )
